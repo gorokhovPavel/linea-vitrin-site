@@ -43,8 +43,8 @@ data/
 ### macOS
 
 ```bash
-git clone ssh://ssh.sourcecraft.dev/organization-pgorokhov/linea-vitrin-site.git
-cd linea-vitrin-site
+git clone https://git.sourcecraft.dev/organization-pgorokhov/rsa-2-5-1.git
+cd rsa-2-5-1
 npm install
 npm run dev
 ```
@@ -54,8 +54,8 @@ npm run dev
 ### Windows
 
 ```cmd
-git clone ssh://ssh.sourcecraft.dev/organization-pgorokhov/linea-vitrin-site.git
-cd linea-vitrin-site
+git clone https://git.sourcecraft.dev/organization-pgorokhov/rsa-2-5-1.git
+cd rsa-2-5-1
 npm install
 npm run dev
 ```
