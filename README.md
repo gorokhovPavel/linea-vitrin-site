@@ -102,7 +102,7 @@ npm run dev
 ## Контрольный просмотр архива
 
 ```bash
-npm run view:archive
+npm run records
 ```
 
 Выводит только контактное лицо, телефон для связи и вознаграждение за наводку — без `id` и времени создания:
@@ -124,8 +124,10 @@ sqlite3 -header -column data/archive.db "SELECT * FROM leads;"
 npm run dev            # дев-сервер (Turbopack)
 npm run build          # продакшен-сборка
 npm run start          # запуск собранного приложения
+npm run typecheck      # проверка типов TypeScript без сборки
 npm run lint           # линт
-npm run view:archive   # вывести наводки из архива SQLite
+npm run records        # вывести наводки из архива SQLite
+npm run view:archive   # то же самое (устаревший псевдоним)
 ```
 
 ## Устранение неполадок
