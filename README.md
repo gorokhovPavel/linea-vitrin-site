@@ -34,8 +34,8 @@ scripts/
   view-records.mjs            — просмотр заявок из SQLite в терминале
   export-csv.mjs              — выгрузка заявок в data/applications.csv
 data/
-  applications.db             — SQLite-база (создаётся автоматически, в git не попадает)
-  applications.csv            — последняя CSV-выгрузка (создаётся скриптом)
+  applications.db             — SQLite-база (создаётся автоматически, в git не попадает — добавьте в .gitignore)
+  applications.csv            — пример последней CSV-выгрузки (зафиксирован в git; обновляется скриптом)
 ```
 
 ## Запуск проекта
@@ -43,7 +43,7 @@ data/
 ### macOS
 
 ```bash
-git clone <url>
+git clone ssh://ssh.sourcecraft.dev/organization-pgorokhov/linea-vitrin-site.git
 cd linea-vitrin-site
 npm install
 npm run dev
@@ -54,7 +54,7 @@ npm run dev
 ### Windows
 
 ```cmd
-git clone <url>
+git clone ssh://ssh.sourcecraft.dev/organization-pgorokhov/linea-vitrin-site.git
 cd linea-vitrin-site
 npm install
 npm run dev
