@@ -33,8 +33,9 @@ src/
 scripts/
   view-records.mjs            — просмотр заявок из SQLite в терминале
   export-csv.mjs              — выгрузка заявок в data/applications.csv
+postcss.config.mjs            — настройка PostCSS для Tailwind CSS 4
 data/
-  applications.db             — SQLite-база (создаётся автоматически, в git не попадает — добавьте в .gitignore)
+  applications.db             — SQLite-база (создаётся при первой отправке формы, в git не попадает)
   applications.csv            — пример последней CSV-выгрузки (зафиксирован в git; обновляется скриптом)
 ```
 
