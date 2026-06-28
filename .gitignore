@@ -20,8 +20,10 @@
 # production
 /build
 
-# sqlite database
-/data
+# sqlite database (не коммитим, создаётся автоматически)
+/data/*.db
+
+# CSV-выгрузка коммитируется как пример (data/applications.csv отслеживается)
 
 # misc
 .DS_Store
