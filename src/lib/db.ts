@@ -1,16 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import sqlite3 from "sqlite3";
+import type { ApplicationData } from "./validation";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "archive.db");
+const DB_PATH = path.join(DATA_DIR, "applications.db");
 
 const CREATE_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS leads (
+  CREATE TABLE IF NOT EXISTS applications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    contact_person TEXT NOT NULL,
-    contact_phone TEXT NOT NULL,
-    reward_expectation TEXT NOT NULL,
+    founder_name TEXT NOT NULL,
+    contact TEXT NOT NULL,
+    project_name TEXT NOT NULL,
+    project_stage TEXT NOT NULL,
+    problem_description TEXT NOT NULL,
+    demo_link TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )
 `;
@@ -48,26 +52,29 @@ function getDb(): Promise<sqlite3.Database> {
   return globalThis.__dbPromise;
 }
 
-export type LeadRecord = {
-  contactPerson: string;
-  contactPhone: string;
-  rewardExpectation: string;
-};
-
-export async function insertLead(record: LeadRecord): Promise<void> {
+export async function insertApplication(data: ApplicationData): Promise<void> {
   const db = await getDb();
 
   await new Promise<void>((resolve, reject) => {
     db.run(
-      "INSERT INTO leads (contact_person, contact_phone, reward_expectation) VALUES (?, ?, ?)",
-      [record.contactPerson, record.contactPhone, record.rewardExpectation],
+      `INSERT INTO applications
+        (founder_name, contact, project_name, project_stage, problem_description, demo_link)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        data.founderName,
+        data.contact,
+        data.projectName,
+        data.projectStage,
+        data.problemDescription,
+        data.demoLink ?? "",
+      ],
       (error) => {
         if (error) {
           reject(error);
         } else {
           resolve();
         }
-      },
+      }
     );
   });
 }

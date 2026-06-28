@@ -1,141 +1,175 @@
-# gallery-lead-archive
+# Vibe Venture
 
-Учебный мини-сайт на Next.js: точка первого контакта для закрытой галереи, которая собирает деликатные наводки по делу о происхождении одной из работ в коллекции.
-
-## Сюжетная рамка и границы мини-проекта
-
-Галерея уточняет происхождение работы из коллекции: в цепочке владельцев есть разрыв, и куратору нужно найти бывших владельцев или хотя бы выйти на их след. Страница — не расследовательский лендинг, а спокойная точка первого контакта: посетитель (бывший ассистент коллекционера, архивист, дилер, свидетель старой продажи) понимает суть и оставляет минимальный контакт, не раскрывая историю публично.
-
-Намеренные границы мини-проекта:
-
-- посетитель **не** заполняет экспертное досье, не прикладывает фото, не описывает историю владения;
-- форма принимает только три поля: контактное лицо, телефон для связи, вознаграждение за наводку;
-- на странице ровно три секции: витрина дела, основания для контакта, первичный запрос — без FAQ и лишних блоков;
-- цепочка данных проверяемая и пошаговая: страница → форма → API-роут → Zod → SQLite → Node.js-скрипт контрольного просмотра.
+MVP-лендинг венчурной фирмы Vibe Venture для ранних ИИ-стартапов. Два экрана: основной лендинг и страница «О компании». Форма заявки на первичный отбор с клиентской и серверной валидацией, сохранением в SQLite и CSV-выгрузкой.
 
 ## Стек
 
-- Next.js 16 (App Router)
-- React 19, TypeScript
-- Zod — единая схема валидации, общая для клиента и сервера
-- SQLite (`sqlite3`) — архив наводок
-- ESLint
+| Технология | Версия | Роль |
+|---|---|---|
+| Next.js | 16 (App Router) | фреймворк, API-роуты |
+| React | 19 | UI |
+| TypeScript | 5 | типизация |
+| Tailwind CSS | 4 | стили |
+| Zod | 4 | схема валидации (клиент + сервер) |
+| SQLite (`sqlite3`) | 6 | локальное хранение заявок |
+| Node.js | — | скрипты выгрузки |
 
-## Запуск
+## Структура проекта
+
+```
+src/
+  app/
+    page.tsx                  — основной лендинг (hero, о нас, плюсы, FAQ, форма)
+    about/
+      page.tsx                — страница подробного описания компании
+    api/
+      applications/
+        route.ts              — POST /api/applications (валидация + сохранение)
+    layout.tsx                — корневой layout, метаданные
+    globals.css               — подключение Tailwind
+  lib/
+    db.ts                     — SQLite: подключение, таблица, insertApplication
+    validation.ts             — Zod-схема applicationSchema и хелперы
+scripts/
+  view-records.mjs            — просмотр заявок из SQLite в терминале
+  export-csv.mjs              — выгрузка заявок в data/applications.csv
+data/
+  applications.db             — SQLite-база (создаётся автоматически, в git не попадает)
+  applications.csv            — последняя CSV-выгрузка (создаётся скриптом)
+```
+
+## Запуск проекта
+
+### macOS
 
 ```bash
+git clone <url>
+cd linea-vitrin-site
 npm install
 npm run dev
 ```
 
 Откройте [http://localhost:3000](http://localhost:3000).
 
-## Структура
+### Windows
 
-- [src/app/page.tsx](src/app/page.tsx) — единственный экран с тремя секциями: `#case` (витрина дела), `#grounds` (основания для контакта), `#request` (форма первичного запроса). Клиентская валидация — той же схемой, что и сервер.
-- [src/app/layout.tsx](src/app/layout.tsx) — корневой layout, шрифты и метаданные страницы.
-- [src/app/globals.css](src/app/globals.css) — стили страницы.
-- [src/app/api/leads/route.ts](src/app/api/leads/route.ts) — `POST`-обработчик первичного обращения: Zod-проверка и сохранение в SQLite.
-- [src/lib/validation.ts](src/lib/validation.ts) — общая Zod-схема `leadSchema` (`contactPerson`, `contactPhone`, `rewardExpectation`) и хелпер `getLeadFieldErrors`.
-- [src/lib/db.ts](src/lib/db.ts) — подключение к SQLite (`data/archive.db`), создание таблицы `leads` при первом обращении, функция `insertLead`.
-- [scripts/view-archive.mjs](scripts/view-archive.mjs) — контрольный просмотр архива: только контактное лицо, телефон для связи и вознаграждение за наводку, без служебных полей.
-
-## Поля формы
-
-В интерфейсе поля называются по-русски, в коде используются технические ключи:
-
-| Поле в интерфейсе | Ключ в коде | Правила |
-|---|---|---|
-| Контактное лицо | `contactPerson` | строка, trim, от 2 до 80 символов |
-| Телефон для связи | `contactPhone` | строка, trim, похожа на номер (от 7 до 15 цифр, допустимы `+`, пробелы, дефисы, скобки) |
-| Вознаграждение за наводку | `rewardExpectation` | строка, trim, от 2 до 200 символов — сумма, диапазон или, например, «обсудить после проверки» |
-
-Других полей форма не принимает — ни на клиенте, ни на сервере.
-
-## API: `POST /api/leads`
-
-Запрос:
-
-```json
-{
-  "contactPerson": "Евдокия, консультант галереи",
-  "contactPhone": "+7 800 555-35-35",
-  "rewardExpectation": "лучше позвонить, чем приезжать"
-}
+```cmd
+git clone <url>
+cd linea-vitrin-site
+npm install
+npm run dev
 ```
 
-Ответ различает три ситуации:
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-- **обращение принято и сохранено** — `200`:
-  ```json
-  { "status": "saved", "message": "Наводка принята и сохранена в архиве" }
-  ```
-- **данные не прошли проверку** — `400`:
-  ```json
-  { "status": "invalid", "errors": { "contactPhone": ["Введите телефон в виде номера, например +7 800 555-35-35"] } }
-  ```
-- **некорректный JSON в теле запроса** — `400`:
-  ```json
-  { "status": "error", "message": "Не удалось прочитать обращение" }
-  ```
-- **сбой при сохранении в SQLite** — `500`:
-  ```json
-  { "status": "error", "message": "Техническая ошибка при сохранении наводки" }
-  ```
+> На Windows убедитесь, что установлены Node.js 18+ и Git. Скрипты используют стандартный Node.js — дополнительные инструменты не нужны.
 
-## Архив (SQLite)
+## CSV-выгрузка
 
-- Файл: `data/archive.db`, создаётся автоматически при первом запросе к API.
-- Не попадает в git — см. `.gitignore`.
-- Таблица `leads`:
+Скрипт читает заявки из `data/applications.db` и записывает их в `data/applications.csv`.
 
-| Колонка | Тип | Описание |
-|---|---|---|
-| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | служебный номер записи |
-| `contact_person` | TEXT NOT NULL | контактное лицо |
-| `contact_phone` | TEXT NOT NULL | телефон для связи |
-| `reward_expectation` | TEXT NOT NULL | вознаграждение за наводку |
-| `created_at` | TEXT NOT NULL | время создания (`datetime('now')`) |
+### macOS
 
-В архив попадает только запись, прошедшая Zod-проверку.
+```bash
+npm run export-csv
+```
 
-## Контрольный просмотр архива
+### Windows
+
+```cmd
+npm run export-csv
+```
+
+Вывод в терминале покажет путь к файлу и количество записей. Если база пустая или отсутствует — создаётся CSV только с заголовком.
+
+Просмотр заявок без CSV:
 
 ```bash
 npm run records
 ```
 
-Выводит только контактное лицо, телефон для связи и вознаграждение за наводку — без `id` и времени создания:
+## Поля формы
 
-```
-Евдокия, консультант галереи — +7 800 555-35-35 — лучше позвонить, чем приезжать
-Мелис, частная детектив — +7 911 111-11-11 — до 3000 евро при подтверждении
+| Поле в интерфейсе | Ключ в коде | Обязательное | Правила |
+|---|---|---|---|
+| Имя основателя | `founderName` | да | 2–100 символов |
+| Email или Telegram | `contact` | да | 2–200 символов |
+| Название проекта | `projectName` | да | 2–100 символов |
+| Стадия проекта | `projectStage` | да | `idea` / `prototype` / `mvp` / `early_revenue` |
+| Описание проблемы | `problemDescription` | да | 10–1000 символов |
+| Ссылка на демо или репозиторий | `demoLink` | нет | валидный URL или пусто |
+
+Форма не принимает других полей — ни на клиенте, ни на сервере.
+
+## API: `POST /api/applications`
+
+**Запрос:**
+
+```json
+{
+  "founderName": "Иван Петров",
+  "contact": "ivan@example.com",
+  "projectName": "DataSense AI",
+  "projectStage": "mvp",
+  "problemDescription": "Малый бизнес тратит часы на ручной анализ данных продаж.",
+  "demoLink": "https://github.com/ivan/datasense"
+}
 ```
 
-Проверка не требует ручных SQL-запросов, но при необходимости таблицу можно посмотреть и через нативный `sqlite3`:
+**Ответы:**
 
-```bash
-sqlite3 -header -column data/archive.db "SELECT * FROM leads;"
-```
+- `200` — заявка принята и сохранена:
+  ```json
+  { "status": "saved", "message": "Заявка принята" }
+  ```
+- `400` — данные не прошли Zod-валидацию:
+  ```json
+  { "status": "invalid", "errors": { "contact": ["Контакт должен содержать минимум 2 символа"] } }
+  ```
+- `400` — некорректный JSON:
+  ```json
+  { "status": "error", "message": "Не удалось прочитать тело запроса" }
+  ```
+- `500` — ошибка сохранения в SQLite:
+  ```json
+  { "status": "error", "message": "Ошибка при сохранении заявки" }
+  ```
 
 ## Команды
 
-```bash
-npm run dev            # дев-сервер (Turbopack)
-npm run build          # продакшен-сборка
-npm run start          # запуск собранного приложения
-npm run typecheck      # проверка типов TypeScript без сборки
-npm run lint           # линт
-npm run records        # вывести наводки из архива SQLite
-npm run view:archive   # то же самое (устаревший псевдоним)
-```
+| Команда | Описание |
+|---|---|
+| `npm run dev` | Дев-сервер (Turbopack, http://localhost:3000) |
+| `npm run build` | Продакшен-сборка |
+| `npm run start` | Запуск собранного приложения |
+| `npm run typecheck` | Проверка типов TypeScript без сборки |
+| `npm run lint` | ESLint |
+| `npm run records` | Вывести все заявки из SQLite в терминал |
+| `npm run export-csv` | Выгрузить заявки в `data/applications.csv` |
 
 ## Устранение неполадок
 
-- **`npm run dev` сообщает, что порт занят, и предлагает `kill <pid>`.** Перед `dev` автоматически выполняется `predev`: он читает `.next/dev/lock` и завершает процесс предыдущего dev-сервера, так что повторный `npm run dev` обычно решает это сам.
-- **Главная страница отдаёт `500 Internal Server Error`, а в `.next/dev/logs/next-development.log` есть `TurbopackInternalError` или `ENOENT ... build-manifest.json`.** Это повреждённый кэш Turbopack — обычно из-за нескольких параллельно запущенных `next dev` поверх одной и той же `.next`. Останавливают все процессы и пересобирают кэш с нуля:
-  ```bash
-  pkill -f "next dev"
-  rm -rf .next
-  npm run dev
-  ```
+**Порт 3000 занят.** `predev` автоматически завершает предыдущий dev-процесс. Если не помогло:
+
+```bash
+# macOS / Linux
+pkill -f "next dev"
+npm run dev
+
+# Windows (PowerShell)
+Stop-Process -Name "node" -Force
+npm run dev
+```
+
+**Повреждённый кэш Turbopack** (`TurbopackInternalError` или `ENOENT build-manifest.json`):
+
+```bash
+# macOS / Linux
+rm -rf .next && npm run dev
+
+# Windows (PowerShell)
+Remove-Item -Recurse -Force .next
+npm run dev
+```
+
+**SQLite не открывается.** Убедитесь, что `data/applications.db` существует (появляется после первой отправки формы) и не заблокирован другим процессом.
