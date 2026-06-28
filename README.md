@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# gallery-lead-archive
 
-## Getting Started
+Учебный мини-сайт на Next.js: точка первого контакта для закрытой галереи, которая собирает деликатные наводки по делу о происхождении одной из работ в коллекции.
 
-First, run the development server:
+## Сюжетная рамка и границы мини-проекта
+
+Галерея уточняет происхождение работы из коллекции: в цепочке владельцев есть разрыв, и куратору нужно найти бывших владельцев или хотя бы выйти на их след. Страница — не расследовательский лендинг, а спокойная точка первого контакта: посетитель (бывший ассистент коллекционера, архивист, дилер, свидетель старой продажи) понимает суть и оставляет минимальный контакт, не раскрывая историю публично.
+
+Намеренные границы мини-проекта:
+
+- посетитель **не** заполняет экспертное досье, не прикладывает фото, не описывает историю владения;
+- форма принимает только три поля: контактное лицо, телефон для связи, вознаграждение за наводку;
+- на странице ровно три секции: витрина дела, основания для контакта, первичный запрос — без FAQ и лишних блоков;
+- цепочка данных проверяемая и пошаговая: страница → форма → API-роут → Zod → SQLite → Node.js-скрипт контрольного просмотра.
+
+## Стек
+
+- Next.js 16 (App Router)
+- React 19, TypeScript
+- Zod — единая схема валидации, общая для клиента и сервера
+- SQLite (`sqlite3`) — архив наводок
+- ESLint
+
+## Запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Структура
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [src/app/page.tsx](src/app/page.tsx) — единственный экран с тремя секциями: `#case` (витрина дела), `#grounds` (основания для контакта), `#request` (форма первичного запроса). Клиентская валидация — той же схемой, что и сервер.
+- [src/app/layout.tsx](src/app/layout.tsx) — корневой layout, шрифты и метаданные страницы.
+- [src/app/globals.css](src/app/globals.css) — стили страницы.
+- [src/app/api/leads/route.ts](src/app/api/leads/route.ts) — `POST`-обработчик первичного обращения: Zod-проверка и сохранение в SQLite.
+- [src/lib/validation.ts](src/lib/validation.ts) — общая Zod-схема `leadSchema` (`contactPerson`, `contactPhone`, `rewardExpectation`) и хелпер `getLeadFieldErrors`.
+- [src/lib/db.ts](src/lib/db.ts) — подключение к SQLite (`data/archive.db`), создание таблицы `leads` при первом обращении, функция `insertLead`.
+- [scripts/view-archive.mjs](scripts/view-archive.mjs) — контрольный просмотр архива: только контактное лицо, телефон для связи и вознаграждение за наводку, без служебных полей.
 
-## Learn More
+## Поля формы
 
-To learn more about Next.js, take a look at the following resources:
+В интерфейсе поля называются по-русски, в коде используются технические ключи:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Поле в интерфейсе | Ключ в коде | Правила |
+|---|---|---|
+| Контактное лицо | `contactPerson` | строка, trim, от 2 до 80 символов |
+| Телефон для связи | `contactPhone` | строка, trim, похожа на номер (от 7 до 15 цифр, допустимы `+`, пробелы, дефисы, скобки) |
+| Вознаграждение за наводку | `rewardExpectation` | строка, trim, от 2 до 200 символов — сумма, диапазон или, например, «обсудить после проверки» |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Других полей форма не принимает — ни на клиенте, ни на сервере.
 
-## Deploy on Vercel
+## API: `POST /api/leads`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Запрос:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```json
+{
+  "contactPerson": "Евдокия, консультант галереи",
+  "contactPhone": "+7 800 555-35-35",
+  "rewardExpectation": "лучше позвонить, чем приезжать"
+}
+```
+
+Ответ различает три ситуации:
+
+- **обращение принято и сохранено** — `200`:
+  ```json
+  { "status": "saved", "message": "Наводка принята и сохранена в архиве" }
+  ```
+- **данные не прошли проверку** — `400`:
+  ```json
+  { "status": "invalid", "errors": { "contactPhone": ["Введите телефон в виде номера, например +7 800 555-35-35"] } }
+  ```
+- **некорректный JSON в теле запроса** — `400`:
+  ```json
+  { "status": "error", "message": "Не удалось прочитать обращение" }
+  ```
+- **сбой при сохранении в SQLite** — `500`:
+  ```json
+  { "status": "error", "message": "Техническая ошибка при сохранении наводки" }
+  ```
+
+## Архив (SQLite)
+
+- Файл: `data/archive.db`, создаётся автоматически при первом запросе к API.
+- Не попадает в git — см. `.gitignore`.
+- Таблица `leads`:
+
+| Колонка | Тип | Описание |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | служебный номер записи |
+| `contact_person` | TEXT NOT NULL | контактное лицо |
+| `contact_phone` | TEXT NOT NULL | телефон для связи |
+| `reward_expectation` | TEXT NOT NULL | вознаграждение за наводку |
+| `created_at` | TEXT NOT NULL | время создания (`datetime('now')`) |
+
+В архив попадает только запись, прошедшая Zod-проверку.
+
+## Контрольный просмотр архива
+
+```bash
+npm run view:archive
+```
+
+Выводит только контактное лицо, телефон для связи и вознаграждение за наводку — без `id` и времени создания:
+
+```
+Евдокия, консультант галереи — +7 800 555-35-35 — лучше позвонить, чем приезжать
+Мелис, частная детектив — +7 911 111-11-11 — до 3000 евро при подтверждении
+```
+
+Проверка не требует ручных SQL-запросов, но при необходимости таблицу можно посмотреть и через нативный `sqlite3`:
+
+```bash
+sqlite3 -header -column data/archive.db "SELECT * FROM leads;"
+```
+
+## Команды
+
+```bash
+npm run dev            # дев-сервер (Turbopack)
+npm run build          # продакшен-сборка
+npm run start          # запуск собранного приложения
+npm run lint           # линт
+npm run view:archive   # вывести наводки из архива SQLite
+```
+
+## Устранение неполадок
+
+- **`npm run dev` сообщает, что порт занят, и предлагает `kill <pid>`.** Перед `dev` автоматически выполняется `predev`: он читает `.next/dev/lock` и завершает процесс предыдущего dev-сервера, так что повторный `npm run dev` обычно решает это сам.
+- **Главная страница отдаёт `500 Internal Server Error`, а в `.next/dev/logs/next-development.log` есть `TurbopackInternalError` или `ENOENT ... build-manifest.json`.** Это повреждённый кэш Turbopack — обычно из-за нескольких параллельно запущенных `next dev` поверх одной и той же `.next`. Останавливают все процессы и пересобирают кэш с нуля:
+  ```bash
+  pkill -f "next dev"
+  rm -rf .next
+  npm run dev
+  ```
